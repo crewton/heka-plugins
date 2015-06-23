@@ -72,7 +72,13 @@ func (k *KinesisOutput) Run(or pipeline.OutputRunner, helper pipeline.PluginHelp
 			pack.Recycle()
 			continue
 		} else {
-			or.LogMessage(string(contents))
+			pk := fmt.Sprintf("%s-%d", pack.Message.Timestamp, pack.Message.Hostname)
+			_, err = k.Client.PutRecord(k.config.Stream, pk, contents, "", "")
+			if err != nil {
+				or.LogError(fmt.Errorf("Error pushing message to Kinesis: %s", err))
+				pack.Recyle()
+				continue
+			}
 		}
 		pack.Recycle()
 	}
