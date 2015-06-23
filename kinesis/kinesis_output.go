@@ -67,20 +67,21 @@ func (k *KinesisOutput) Run(or pipeline.OutputRunner, helper pipeline.PluginHelp
 			pack.Recycle()
 			continue
 		}
-		if contents, err = json.Marshal(msg); err != nil {
-			or.LogError(fmt.Errorf("Error marshalling: %s", err))
-			pack.Recycle()
-			continue
-		} else {
-			or.LogMessage(string(contents))
-			pk := fmt.Sprintf("%d-%s", pack.Message.Timestamp, pack.Message.Hostname)
-			_, err = k.Client.PutRecord(k.config.Stream, pk, contents, "", "")
-			if err != nil {
-				or.LogError(fmt.Errorf("Error pushing message to Kinesis: %s", err))
-				pack.Recycle()
-				continue
-			}
-		}
+		or.LogMessage(string(msg))
+		// if contents, err = json.Marshal(msg); err != nil {
+		// 	or.LogError(fmt.Errorf("Error marshalling: %s", err))
+		// 	pack.Recycle()
+		// 	continue
+		// } else {
+		// 	or.LogMessage(string(contents))
+		// 	pk := fmt.Sprintf("%d-%s", pack.Message.Timestamp, pack.Message.Hostname)
+		// 	_, err = k.Client.PutRecord(k.config.Stream, pk, contents, "", "")
+		// 	if err != nil {
+		// 		or.LogError(fmt.Errorf("Error pushing message to Kinesis: %s", err))
+		// 		pack.Recycle()
+		// 		continue
+		// 	}
+		// }
 		pack.Recycle()
 	}
 
