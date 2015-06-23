@@ -1,7 +1,7 @@
 package kinesis
 
 import (
-	"encoding/json"
+	// "encoding/json"
 	"fmt"
 	"github.com/AdRoll/goamz/aws"
 	kin "github.com/AdRoll/goamz/kinesis"
@@ -54,10 +54,10 @@ func (k *KinesisOutput) Init(config interface{}) error {
 
 func (k *KinesisOutput) Run(or pipeline.OutputRunner, helper pipeline.PluginHelper) error {
 	var (
-		pack     *pipeline.PipelinePack
-		contents []byte
-		msg      []byte
-		err      error
+		pack *pipeline.PipelinePack
+		// contents []byte
+		msg []byte
+		err error
 	)
 
 	for pack = range or.InChan() {
