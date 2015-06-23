@@ -1,7 +1,6 @@
 package kinesis
 
 import (
-	// "encoding/json"
 	"fmt"
 	"github.com/AdRoll/goamz/aws"
 	kin "github.com/AdRoll/goamz/kinesis"
@@ -55,9 +54,9 @@ func (k *KinesisOutput) Init(config interface{}) error {
 func (k *KinesisOutput) Run(or pipeline.OutputRunner, helper pipeline.PluginHelper) error {
 	var (
 		pack *pipeline.PipelinePack
-		// contents []byte
-		msg []byte
-		err error
+		msg  []byte
+		pk   string
+		err  error
 	)
 
 	for pack = range or.InChan() {
@@ -67,21 +66,13 @@ func (k *KinesisOutput) Run(or pipeline.OutputRunner, helper pipeline.PluginHelp
 			pack.Recycle()
 			continue
 		}
-		or.LogMessage(string(msg))
-		// if contents, err = json.Marshal(msg); err != nil {
-		// 	or.LogError(fmt.Errorf("Error marshalling: %s", err))
-		// 	pack.Recycle()
-		// 	continue
-		// } else {
-		// 	or.LogMessage(string(contents))
-		// 	pk := fmt.Sprintf("%d-%s", pack.Message.Timestamp, pack.Message.Hostname)
-		// 	_, err = k.Client.PutRecord(k.config.Stream, pk, contents, "", "")
-		// 	if err != nil {
-		// 		or.LogError(fmt.Errorf("Error pushing message to Kinesis: %s", err))
-		// 		pack.Recycle()
-		// 		continue
-		// 	}
-		// }
+		pk = fmt.Sprintf("%d-%s", pack.Message.Timestamp, pack.Message.Hostname)
+		_, err = k.Client.PutRecord(k.config.Stream, pk, msg, "", "")
+		if err != nil {
+			or.LogError(fmt.Errorf("Error pushing message to Kinesis: %s", err))
+			pack.Recycle()
+			continue
+		}
 		pack.Recycle()
 	}
 
