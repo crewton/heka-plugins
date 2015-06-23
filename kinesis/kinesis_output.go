@@ -68,17 +68,17 @@ func (k *KinesisOutput) Run(or pipeline.OutputRunner, helper pipeline.PluginHelp
 			pack.Recycle()
 			continue
 		}
-		msg, err = base64.StdEncoding.DecodeString(string(msg))
-		if err != nil {
-			or.LogError(fmt.Errorf("Error decoding: %s", err))
-			pack.Recycle()
-			continue
-		}
 		if contents, err = json.Marshal(msg); err != nil {
 			or.LogError(fmt.Errorf("Error marshalling: %s", err))
 			pack.Recycle()
 			continue
 		} else {
+			contents, err = base64.StdEncoding.DecodeString(string(contents))
+			if err != nil {
+				or.LogError(fmt.Errorf("Error decoding: %s", err))
+				pack.Recycle()
+				continue
+			}
 			pk := fmt.Sprintf("%d-%s", pack.Message.Timestamp, pack.Message.Hostname)
 			_, err = k.Client.PutRecord(k.config.Stream, pk, contents, "", "")
 			if err != nil {
