@@ -73,12 +73,7 @@ func (k *KinesisOutput) Run(or pipeline.OutputRunner, helper pipeline.PluginHelp
 			pack.Recycle()
 			continue
 		} else {
-			contents, err = base64.StdEncoding.DecodeString(string(contents))
-			if err != nil {
-				or.LogError(fmt.Errorf("Error decoding: %s", err))
-				pack.Recycle()
-				continue
-			}
+			or.LogMessage(string(contents))
 			pk := fmt.Sprintf("%d-%s", pack.Message.Timestamp, pack.Message.Hostname)
 			_, err = k.Client.PutRecord(k.config.Stream, pk, contents, "", "")
 			if err != nil {
