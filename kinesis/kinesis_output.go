@@ -1,7 +1,6 @@
 package kinesis
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/AdRoll/goamz/aws"
