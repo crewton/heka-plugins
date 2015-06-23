@@ -1,6 +1,7 @@
 package kinesis
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/AdRoll/goamz/aws"
@@ -64,6 +65,12 @@ func (k *KinesisOutput) Run(or pipeline.OutputRunner, helper pipeline.PluginHelp
 		msg, err = or.Encode(pack)
 		if err != nil {
 			or.LogError(fmt.Errorf("Error encoding message: %s", err))
+			pack.Recycle()
+			continue
+		}
+		msg, err = base64.StdEncoding.DecodeString(string(msg))
+		if err != nil {
+			or.LogError(fmt.Errorf("Error decoding: %s", err))
 			pack.Recycle()
 			continue
 		}
