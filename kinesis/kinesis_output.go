@@ -59,6 +59,10 @@ func (k *KinesisOutput) Run(or pipeline.OutputRunner, helper pipeline.PluginHelp
 		err  error
 	)
 
+	if or.Encoder() == nil {
+		return fmt.Errorf("Encoder required.")
+	}
+
 	for pack = range or.InChan() {
 		msg, err = or.Encode(pack)
 		if err != nil {
