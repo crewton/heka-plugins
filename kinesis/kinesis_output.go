@@ -38,13 +38,13 @@ func (k *KinesisOutput) Init(config interface{}) error {
 	k.config = config.(*KinesisOutputConfig)
 	a, err := aws.GetAuth(k.config.AccessKeyID, k.config.SecretAccessKey, k.config.Token, time.Now())
 	if err != nil {
-		return fmt.Errorf("error authenticating: %s", err)
+		return fmt.Errorf("Error authenticating: %s", err)
 	}
 	k.auth = a
 
 	region, ok := aws.Regions[k.config.Region]
 	if !ok {
-		return fmt.Errorf("region does not exist: %s", k.config.Region)
+		return fmt.Errorf("Region does not exist: %s", k.config.Region)
 	}
 
 	k.Client = kin.New(k.auth, region)
@@ -72,7 +72,7 @@ func (k *KinesisOutput) Run(or pipeline.OutputRunner, helper pipeline.PluginHelp
 			pack.Recycle()
 			continue
 		} else {
-			pk := fmt.Sprintf("%s-%d", pack.Message.Timestamp, pack.Message.Hostname)
+			pk := fmt.Sprintf("%d-%s", pack.Message.Timestamp, pack.Message.Hostname)
 			_, err = k.Client.PutRecord(k.config.Stream, pk, contents, "", "")
 			if err != nil {
 				or.LogError(fmt.Errorf("Error pushing message to Kinesis: %s", err))
