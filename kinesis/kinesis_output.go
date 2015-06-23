@@ -21,6 +21,7 @@ type KinesisOutputConfig struct {
 	AccessKeyID     string `toml:"access_key_id"`
 	SecretAccessKey string `toml:"secret_access_key"`
 	Token           string `toml:"token"`
+	PayloadOnly     bool   `toml:"payload_only"`
 }
 
 func (k *KinesisOutput) ConfigStruct() interface{} {
@@ -52,12 +53,24 @@ func (k *KinesisOutput) Init(config interface{}) error {
 }
 
 func (k *KinesisOutput) Run(or pipeline.OutputRunner, helper pipeline.PluginHelper) error {
-	var contents []byte
-	var err error
+	var (
+		pack     *pipeline.PipelinePack
+		contents []byte
+		msg      []byte
+		err      error
+	)
 
-	for pack := range or.InChan() {
-		if contents, err = json.Marshal(pack.Message); err != nil {
-			or.LogError(err)
+	for pack = range or.InChan() {
+		msg, err = or.Encode(pack)
+		if err != nil {
+			or.LogError(fmt.Errorf("Error encoding message: %s", err))
+			pack.Recycle()
+			continue
+		}
+		if contents, err = json.Marshal(msg); err != nil {
+			or.LogError(fmt.Errorf("Error marshalling: %s", err))
+			pack.Recycle()
+			continue
 		} else {
 			or.LogMessage(string(contents))
 		}
