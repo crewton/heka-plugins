@@ -35,28 +35,15 @@ func (k *KinesisOutput) ConfigStruct() interface{} {
 }
 
 func (k *KinesisOutput) Init(config interface{}) error {
+	var creds *credentials.Credentials
+
 	k.config = config.(*KinesisOutputConfig)
 
-	providers := make([]credentials.Provider, 0)
-	role := credentials.EC2RoleProvider{
-		Client: &http.Client{
-			Timeout: 10 * time.Second,
-		},
-		Endpoint:     "",
-		ExpiryWindow: 0,
-	}
-	providers = append(providers, role)
-
 	if k.config.AccessKeyID != "" && k.config.SecretAccessKey != "" {
-		static := credentials.StaticProvider{
-			Value: credentials.Value{
-				AccessKeyID:     k.config.AccessKeyID,
-				SecretAccessKey: k.config.SecretAccessKey,
-			},
-		}
-		providers = append(providers, static)
+		creds = credentials.NewStaticCredentials(k.config.AccessKeyID, k.config.SecretAccessKey, "")
+	} else {
+		creds = credentials.NewEC2RoleCredentials(&http.Client{Timeout: 10 * time.Second}, "", 0)
 	}
-	creds := credentials.NewChainCredentials(providers)
 	conf := &aws.Config{
 		Region:      k.config.Region,
 		Credentials: creds,
