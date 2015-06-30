@@ -66,10 +66,11 @@ func (k *KinesisOutput) Init(config interface{}) error {
 
 func (k *KinesisOutput) Run(or pipeline.OutputRunner, helper pipeline.PluginHelper) error {
 	var (
-		pack *pipeline.PipelinePack
-		msg  []byte
-		pk   string
-		err  error
+		pack   *pipeline.PipelinePack
+		msg    []byte
+		pk     string
+		err    error
+		params *kin.PutRecordInput
 	)
 
 	if or.Encoder() == nil {
@@ -87,7 +88,12 @@ func (k *KinesisOutput) Run(or pipeline.OutputRunner, helper pipeline.PluginHelp
 		if k.config.PayloadOnly {
 			msg = pack.Message.GetPayload()
 		}
-		_, err = k.Client.PutRecord(k.config.Stream, pk, msg, "", "")
+		params = &kinesis.PutRecordInput{
+			Data:         []byte(msg),
+			PartitionKey: aws.String(pk),
+			StreamName:   aws.String(k.config.Stream),
+		}
+		_, err = k.Client.PutRecord(params)
 		if err != nil {
 			or.LogError(fmt.Errorf("Error pushing message to Kinesis: %s", err))
 			pack.Recycle()
