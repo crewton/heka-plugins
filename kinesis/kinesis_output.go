@@ -10,7 +10,6 @@ import (
 )
 
 type KinesisOutput struct {
-	auth   aws.Auth
 	config *KinesisOutputConfig
 	Client *kin.Kinesis
 }
