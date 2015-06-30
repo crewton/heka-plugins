@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	kin "github.com/aws/aws-sdk-go/service/kinesis"
 	"github.com/mozilla-services/heka/pipeline"
+	"net/http"
 	"time"
 )
 
@@ -36,7 +37,7 @@ func (k *KinesisOutput) ConfigStruct() interface{} {
 func (k *KinesisOutput) Init(config interface{}) error {
 	k.config = config.(*KinesisOutputConfig)
 
-	providers := make([]credentials.Provider)
+	providers := make([]credentials.Provider, 0)
 	role := credentials.EC2RoleProvider{
 		Client: &http.Client{
 			Timeout: 10 * time.Second,
@@ -48,8 +49,10 @@ func (k *KinesisOutput) Init(config interface{}) error {
 
 	if k.config.AccessKeyID != "" && k.config.SecretAccessKey != "" {
 		static := credentials.StaticProvider{
-			AccessKeyID:     k.config.AccessKeyID,
-			SecretAccessKey: k.config.SecretAccessKey,
+			Value: credentials.Value{
+				AccessKeyID:     k.config.AccessKeyID,
+				SecretAccessKey: k.config.SecretAccessKey,
+			},
 		}
 		providers = append(providers, static)
 	}
@@ -85,10 +88,10 @@ func (k *KinesisOutput) Run(or pipeline.OutputRunner, helper pipeline.PluginHelp
 		}
 		pk = fmt.Sprintf("%d-%s", pack.Message.Timestamp, pack.Message.Hostname)
 		if k.config.PayloadOnly {
-			msg = pack.Message.GetPayload()
+			msg = []byte(pack.Message.GetPayload())
 		}
-		params = &kinesis.PutRecordInput{
-			Data:         []byte(msg),
+		params = &kin.PutRecordInput{
+			Data:         msg,
 			PartitionKey: aws.String(pk),
 			StreamName:   aws.String(k.config.Stream),
 		}
