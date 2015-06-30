@@ -2,8 +2,9 @@ package kinesis
 
 import (
 	"fmt"
-	"github.com/AdRoll/goamz/aws"
-	kin "github.com/AdRoll/goamz/kinesis"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	kin "github.com/aws/aws-sdk-go/service/kinesis"
 	"github.com/mozilla-services/heka/pipeline"
 	"time"
 )
@@ -35,18 +36,30 @@ func (k *KinesisOutput) ConfigStruct() interface{} {
 
 func (k *KinesisOutput) Init(config interface{}) error {
 	k.config = config.(*KinesisOutputConfig)
-	a, err := aws.GetAuth(k.config.AccessKeyID, k.config.SecretAccessKey, k.config.Token, time.Now())
-	if err != nil {
-		return fmt.Errorf("Error authenticating: %s", err)
-	}
-	k.auth = a
 
-	region, ok := aws.Regions[k.config.Region]
-	if !ok {
-		return fmt.Errorf("Region does not exist: %s", k.config.Region)
+	providers := make([]credentials.Provider)
+	role := credentials.EC2RoleProvider{
+		Client: &http.Client{
+			Timeout: 10 * time.Second,
+		},
+		Endpoint:     "",
+		ExpiryWindow: 0,
 	}
+	providers = append(providers, role)
 
-	k.Client = kin.New(k.auth, region)
+	if k.config.AccessKeyID != "" && k.config.SecretAccessKey != "" {
+		static := credentials.StaticProvider{
+			AccessKeyID:     k.config.AccessKeyID,
+			SecretAccessKey: k.config.SecretAccessKey,
+		}
+		providers = append(providers, static)
+	}
+	creds := credentials.NewChainCredentials(providers)
+	conf := &aws.Config{
+		Region:      k.config.Region,
+		Credentials: creds,
+	}
+	k.Client = kin.New(conf)
 
 	return nil
 }
@@ -71,6 +84,9 @@ func (k *KinesisOutput) Run(or pipeline.OutputRunner, helper pipeline.PluginHelp
 			continue
 		}
 		pk = fmt.Sprintf("%d-%s", pack.Message.Timestamp, pack.Message.Hostname)
+		if k.config.PayloadOnly {
+			msg = pack.Message.GetPayload()
+		}
 		_, err = k.Client.PutRecord(k.config.Stream, pk, msg, "", "")
 		if err != nil {
 			or.LogError(fmt.Errorf("Error pushing message to Kinesis: %s", err))

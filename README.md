@@ -3,6 +3,11 @@
 ## Installation
 Follow the [guide from the heka documentation to build with external plugins][3].
 
+You also need to include the official aws-sdk-go by adding the following below the `goamz` clone in `cmake/externals.cmake`:
+```bash
+git_clone(https://github.com/aws/aws-sdk-go 90a21481e4509c85ee68b908c72fe4b024311447)
+```
+
 If you do not need all of the plugins from this repository, you can specify specific ones:
 ```bash
 add_external_plugin(git https://github.com/crewton/heka-plugins master kinesis)
